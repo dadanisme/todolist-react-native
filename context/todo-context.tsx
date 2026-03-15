@@ -4,6 +4,14 @@ import { Todo } from '@/types/todo';
 
 const STORAGE_KEY = 'todos';
 
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function persistTodos(todos: Todo[]) {
+  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(todos)).catch(console.error);
+}
+
 interface TodoContextValue {
   todos: Todo[];
   loaded: boolean;
@@ -20,52 +28,54 @@ export function TodoProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        setTodos(JSON.parse(raw));
-      }
-      setLoaded(true);
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            setTodos(JSON.parse(raw));
+          } catch {
+            // corrupted data, start fresh
+          }
+        }
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  const addTodo = useCallback((title: string) => {
+    setTodos((prev) => {
+      const next = [
+        { id: generateId(), title, completed: false, createdAt: Date.now() },
+        ...prev,
+      ];
+      persistTodos(next);
+      return next;
     });
   }, []);
 
-  const persist = useCallback((next: Todo[]) => {
-    setTodos(next);
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  const updateTodo = useCallback((id: string, title: string) => {
+    setTodos((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, title } : t));
+      persistTodos(next);
+      return next;
+    });
   }, []);
 
-  const addTodo = useCallback(
-    (title: string) => {
-      const todo: Todo = {
-        id: Date.now().toString(),
-        title,
-        completed: false,
-        createdAt: Date.now(),
-      };
-      persist([todo, ...todos]);
-    },
-    [todos, persist],
-  );
+  const deleteTodo = useCallback((id: string) => {
+    setTodos((prev) => {
+      const next = prev.filter((t) => t.id !== id);
+      persistTodos(next);
+      return next;
+    });
+  }, []);
 
-  const updateTodo = useCallback(
-    (id: string, title: string) => {
-      persist(todos.map((t) => (t.id === id ? { ...t, title } : t)));
-    },
-    [todos, persist],
-  );
-
-  const deleteTodo = useCallback(
-    (id: string) => {
-      persist(todos.filter((t) => t.id !== id));
-    },
-    [todos, persist],
-  );
-
-  const toggleTodo = useCallback(
-    (id: string) => {
-      persist(todos.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t)));
-    },
-    [todos, persist],
-  );
+  const toggleTodo = useCallback((id: string) => {
+    setTodos((prev) => {
+      const next = prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t));
+      persistTodos(next);
+      return next;
+    });
+  }, []);
 
   return (
     <TodoContext.Provider value={{ todos, loaded, addTodo, updateTodo, deleteTodo, toggleTodo }}>

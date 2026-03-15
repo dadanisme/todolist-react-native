@@ -1,8 +1,6 @@
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { useLayoutEffect } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -12,25 +10,23 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 
 export default function HomeScreen() {
   const { todos, loaded } = useTodos();
-  const navigation = useNavigation();
   const tint = useThemeColor({}, 'tint');
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Link href="/modal" asChild>
-          <Pressable hitSlop={8}>
-            <Ionicons name="add" size={28} color={tint} />
-          </Pressable>
-        </Link>
-      ),
-    });
-  }, [navigation, tint]);
 
   if (!loaded) return null;
 
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Link href="/modal" asChild>
+              <Pressable hitSlop={8}>
+                <Ionicons name="add" size={28} color={tint} />
+              </Pressable>
+            </Link>
+          ),
+        }}
+      />
       <FlatList
         data={todos}
         keyExtractor={(item) => item.id}

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput } from 'react-native';
-import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -11,7 +11,6 @@ export default function ModalScreen() {
   const { todoId } = useLocalSearchParams<{ todoId?: string }>();
   const { todos, addTodo, updateTodo, deleteTodo } = useTodos();
   const router = useRouter();
-  const navigation = useNavigation();
 
   const existing = todoId ? todos.find((t) => t.id === todoId) : undefined;
   const isEdit = !!existing;
@@ -19,12 +18,6 @@ export default function ModalScreen() {
   const [title, setTitle] = useState(existing?.title ?? '');
   const tint = useThemeColor({}, 'tint');
   const textColor = useThemeColor({}, 'text');
-
-  useEffect(() => {
-    navigation.setOptions({
-      title: isEdit ? 'Edit TODO' : 'New TODO',
-    });
-  }, [isEdit, navigation]);
 
   const handleSave = () => {
     const trimmed = title.trim();
@@ -47,6 +40,7 @@ export default function ModalScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      <Stack.Screen options={{ title: isEdit ? 'Edit TODO' : 'New TODO' }} />
       <TextInput
         style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
         placeholder="What needs to be done?"
